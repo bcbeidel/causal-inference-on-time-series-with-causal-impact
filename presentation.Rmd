@@ -36,7 +36,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 class: inverse middle
 
-![xkcd: Good Morning](https://imgs.xkcd.com/comics/good_morning.png)
+.center[
+  ![xkcd: Good Morning](https://imgs.xkcd.com/comics/good_morning.png)
+]
 
 <br>
 
@@ -44,7 +46,9 @@ class: inverse middle
 
 ---
 
-## Can we measure sleep quality?
+class: inverse
+
+## Was there a decline in sleep quality in March?
 
 ```{r visualizing-sleep-statistics, echo=FALSE, fig.height=5, fig.width=11, warning=FALSE}
 suppressWarnings({
@@ -62,22 +66,24 @@ suppressWarnings({
 
 ---
 
-## Oh right...
+class: inverse
+
+## Why might that be? Oh right...
 
 ![Stay At Home Order](./img/nc-stay-at-home-order.png)
 
 ---
 
-## What was the impact of the 'treatment'?
+## What are our limitations when estimating the impact?
 
-What are our limitations?<br>
-
+.large[
 1. We only have historical data for a single subject
 2. Too expensive to recreate an experiment
 3. Time travel not yet available
+]
 
 .pull-bottom[
-**Our challenge:** We need to estimate the outcome as if the 'treatment' never occurred. (i.e., the counterfactual `Y(0)`)
+**Our challenge:** We need to estimate the outcome as if the 'treatment' never occurred. (i.e., the counterfactual)
 ]
 
 ---
@@ -87,8 +93,6 @@ What are our limitations?<br>
 ![](./img/causal-impact-a-simple-example.png)
 
 ---
-
-class: inverse
 
 ## Estimate `Y(0)` with `CausalImpact`
 
@@ -119,7 +123,8 @@ library(zoo); set.seed(1);
 x1 <- 100 + arima.sim(model = list(ar = 0.999), n = 100)
 y  <- 1.2 * (x1) + rnorm(100)     
 y[71:100] <- y[71:100] + 10
-time.points <- seq.Date(as.Date("2020-01-01"), by = 1, length.out = 100)
+start <- as.Date("2020-01-01")
+time.points <- seq.Date(start, by = 1, length.out = 100)
 data <- zoo::zoo(cbind(y, x1), time.points)
 
 zoo::autoplot.zoo(data, facets = NULL)
@@ -128,10 +133,10 @@ zoo::autoplot.zoo(data, facets = NULL)
 ---
 
 ```{r, visualizing-impact, fig.height=6, fig.width=10}
-pre  <- as.Date(c("2020-01-01", "2020-03-11"))  
-post <- as.Date(c("2020-03-12", "2020-04-09"))  
+pre.period  <- as.Date(c("2020-01-01", "2020-03-11"))  
+post.period <- as.Date(c("2020-03-12", "2020-04-09"))  
 
-impact <- CausalImpact(data, pre, post)
+impact <- CausalImpact(data, pre.period, post.period)
 plot(impact)
 ```
 
@@ -143,9 +148,23 @@ summary(impact)
 
 ---
 
-## What about the sleep data and weather covariates?
+## Finding Relevant Covariates
 
-```{r echo=FALSE}
+```{r fig.height=4, fig.width=10}
+library(gtrendsR)
+keywords <- c("insomnia", "pet adoption", "wfh", "sourdough")
+trends <- gtrendsR::gtrends(keywords, time ="2020-01-01 2020-09-01")
+plot(trends)
+```
+.pull-bottom[
+_Note:_ For our sleep problem, these are likely poor choices because they likely violate the assumption that the covariates are unaffected by the treatment, COVID19 and the government response in the United States.
+]
+
+---
+
+## Can we use the weather for our covariates instead?
+
+```{r, fig.width=10, echo=FALSE}
 sleep_data <- get_sleep_data_for_causal_impact(here::here(), 7)
 zoo::autoplot.zoo(sleep_data)
 ```
@@ -153,79 +172,106 @@ zoo::autoplot.zoo(sleep_data)
 ---
 
 ```{r fig.height=5, fig.width=10, image-impact-two}
-pre  <- as.Date(c("2019-09-04", "2020-03-27"))
-post <- as.Date(c("2020-03-28", "2020-09-02"))
+pre.period  <- as.Date(c("2019-09-04", "2020-03-27"))
+post.period <- as.Date(c("2020-03-28", "2020-09-02"))
 
-sleep_impact_march_28 <- CausalImpact(sleep_data, pre, post)
-plot(sleep_impact_march_28)
+s_impact <- CausalImpact(sleep_data, pre.period, post.period)
+plot(s_impact)
 ```
 
 ---
 
 ```{r, summary-of-impact-two}
-summary(sleep_impact_march_28)
+summary(s_impact)
 ```
-
 
 ---
 
 ## Inconclusive? Some popular reasons...
 
 1. There was no impact.
-2. The true 'treatment' occurred at another time.
-3. An 'inappropriate' prior was chosen.
+2. The true treatment occurred at another time.
+3. An inappropriate prior was chosen.
 4. Multiple, 'treatments' occurred in same time period.
 5. Reliance on too few covariates (spurious correlation overtook model)
-6. Covariant time-series are not correlated with target `pre-period`
+6. Covariant time-series are not correlated with target `pre.period`
 
-.bottom[
-  __In the case of the sleep quality data, all four are potentially true.__
+.pull-bottom[
+  __In the case of the prior analysis, many of these are probably true.__
 ]
 
 ---
 
-```{r, fig.height=5, fig.width=10, image-impact-three}
-pre  <- as.Date(c("2019-09-04", "2020-03-15"))
-post <- as.Date(c("2020-03-16", "2020-09-02"))
+## Started WFH on March 16th, is it the 'treatment' we are looking for?
 
-sleep_impact_march_16 <- CausalImpact(sleep_data, pre, post)
-plot(sleep_impact_march_16)
+```{r, fig.height=5, fig.width=10, image-impact-three}
+pre.period  <- as.Date(c("2019-09-04", "2020-03-15"))
+post.period <- as.Date(c("2020-03-16", "2020-09-02"))
+
+s_impact <- CausalImpact(sleep_data, pre.period, post.period)
+plot(s_impact)
 ```
-Let's pick another period...WFH started March 16
 
 ---
 
-### What is the impact now?
+## Outputs are sensitive to period, prior, and covariates.
 
 ```{r, summary-of-impact-three}
-summary(sleep_impact_march_16)
+summary(s_impact)
 ```
 
 ---
 
-## TLDR;
+## Under the hood: State Space Model
 
-This technique sensitive to the selected period, priors, and covariates.
+A state space model, defined by an observation equation (1), linking observed data $y_{t}$ to a latent state $\alpha_{t}$ over time. And a state equation (2), dictating the change in state $\alpha_{t}$ over time.
+
+$$y_{t} = Z_{t}^{T} \alpha_{t} + \epsilon_{t} \\ \alpha_{t+1} = T_{t}\alpha_{t} + R_{t}\eta_{t}$$
+
+- scalar observation: $y_{t}$
+- output vector: $Z_{t}$
+- state vector: $\alpha_{t}$
+- observation error: $\epsilon_{t}$
+- transition matrix: $T_{t}$
+- control matrix: $R_{t}$
+- system error vector: $\eta_{t}$
 
 ---
 
-class: left-align
+## State has mulitiple components in the model
 
-## Under the hood
+The state vector $\alpha_{t}$ is modular, and allows for the inclusion of elements from different aggregates.
 
+- Local Linear Trends
+- Multiple levels of seasonality
+- Contemporaneous covariates
+    - with static coefficient
+    - with dynamic coefficient
 
-A state space model, defined by an observation equation (1), linking observed data $$y_{t}$$ to a latent state $$\alpha_{t}$$ over time. And a state equation (2), dictating the change in state $$\alpha_{t}$$ over time.
+.pull-bottom[
+Given too many covariates, the model uses a _spike-and-slab_ technique to help determine which covariates to include, and how strongly they should influence the predictions.
+]
 
-$$y_{t} = Z_{t}^{T} \alpha_{t} + \epsilon_{t}$$
+---
 
-$$\alpha_{t+1} = T_{t}\alpha_{t} + R_{t}\eta_{t}$$
+## Simulating the counterfactual
+
+1. For the training period, simulate draws of the state vector $\alpha_{t}$ and model parameters given $y_{t}$
+2. Simulate outcomes the counterfactual period $\bar{y}_{n+1:m}$ given pre-intervention $y_{1:n}$
+3. Use posterior samples to calculate point-wise impact $y_{t}-\bar{y}_{t}$ for each $t = 1,...,m$, aggregate for cumulative impact estimate.
+
+---
+
+class: center middle inverse
+
+## Demo
 
 ---
 
 ## Additional Resources
 
-- [CausalImpact Documentation](https://google.github.io/CausalImpact/CausalImpact.html>)
-- [YouTube: Inferring the effect of an event using CausalImpact](https://www.youtube.com/watch?v=GTgZfCltMm8) 
-- [Paper] Brodersen KH, Gallusser F, Koehler J, Remy N, Scott SL. Inferring causal impact using Bayesian structural time-series models. Annals of Applied Statistics, 2015, Vol. 9, No. 1, 247-274.
-  - <http://research.google.com/pubs/pub41854.html>
+- Brodersen KH, Gallusser F, Koehler J, Remy N, Scott SL. Inferring causal impact using Bayesian structural time-series models. Annals of Applied Statistics, 2015, Vol. 9, No. 1, 247-274. <http://research.google.com/pubs/pub41854.html>
 
+- Brodersen, Kay H., and Alain Hauser. “CausalImpact.” Google, <https://google.github.io/CausalImpact/CausalImpact.html>. Accessed 1 Sept. 2020.
+
+- Big Things Conference. “Inferring the Effect of an Event Using CausalImpact by Kay Brodersen.” YouTube, 13 Dec. 2016, <https://www.youtube.com/watch?v=GTgZfCltMm8>. Accessed 1 Sept. 2020.
