@@ -1,0 +1,231 @@
+---
+title: "Causal Inference on Time Series Data"
+subtitle: "with CausalImpact"
+author: "Brandon Beidel"
+date: "2020/09/28"
+output:
+  xaringan::moon_reader:
+    self_contained: true
+    css: ["default", "default-fonts", "./style/custom.css"]
+    lib_dir: libs
+    mathjax: default
+    nature:
+      highlightStyle: github
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(here)
+library(CausalImpact)
+library(ggthemes)
+library(zoo)
+library(readr)
+library(anytime)
+library(tidyr)
+library(lubridate)
+
+set.seed(1)
+
+source(here::here("R", "sleep.R"))
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+class: inverse middle
+
+![xkcd: Good Morning](https://imgs.xkcd.com/comics/good_morning.png)
+
+<br>
+
+<small>Imagine a world where you rarely leave home, have little separation between your work and home life, have lost track of time, and haven't quite mastered a regular sleep cycle. __Great, I'm right there with you.__</small>
+
+---
+
+## Can we measure sleep quality?
+
+```{r visualizing-sleep-statistics, echo=FALSE, fig.height=5, fig.width=11, warning=FALSE}
+suppressWarnings({
+  get_sleep_data(root = here::here(), rolling_average_window = 7) %>%
+    dplyr::filter(dt >= "2019-10-01") %>%
+    ggplot2::ggplot() +
+    ggplot2::geom_line(ggplot2::aes(x=dt, y=sleep_score)) +
+    ggplot2::xlab("Date") + 
+    ggplot2::ylab("Fitness Tracker Sleep Score") +
+    ggthemes::theme_fivethirtyeight() 
+})
+```
+
+<small>With a fitness tracker, we have an imperfect proxy.  **At first glance, it looks like there is a shift in late March, were there any major changes?**  If we identify a potential cause, can estimate how much it has affected sleep quality?</small>
+
+---
+
+## Oh right...
+
+![Stay At Home Order](./img/nc-stay-at-home-order.png)
+
+---
+
+## What was the impact of the 'treatment'?
+
+What are our limitations?<br>
+
+1. We only have historical data for a single subject
+2. Too expensive to recreate an experiment
+3. Time travel not yet available
+
+.pull-bottom[
+**Our challenge:** We need to estimate the outcome as if the 'treatment' never occurred. (i.e., the counterfactual `Y(0)`)
+]
+
+---
+
+## An easy-to-estimate counterfactual `Y(0)`
+
+![](./img/causal-impact-a-simple-example.png)
+
+---
+
+class: inverse
+
+## Estimate `Y(0)` with `CausalImpact`
+
+![](./img/complex-example.png)
+
+`CausalImpact` is an R package for causal inference using Bayesian structural time-series models.
+
+???
+
+Try to predict the counterfactual, `Y(0)` given:
+
+- response time series `Y(1)` (e.g., clicks)
+- set of control time series (e.g., clicks in unaffected markets or sites)
+- known period of intervention.
+
+Does so with a _Bayesian structural time-series model_ to predict what would have happened if the intervention had never occurred.
+
+Assumptions
+
+- there is a set control time series that were themselves not affected by the intervention
+- that the relationship between covariates and treated time series, as established during the pre-period, remains stable throughout the post-period
+
+---
+
+```{r creating-inputs, fig.height=4, fig.width=10}
+library(zoo); set.seed(1);
+
+x1 <- 100 + arima.sim(model = list(ar = 0.999), n = 100)
+y  <- 1.2 * (x1) + rnorm(100)     
+y[71:100] <- y[71:100] + 10
+time.points <- seq.Date(as.Date("2020-01-01"), by = 1, length.out = 100)
+data <- zoo::zoo(cbind(y, x1), time.points)
+
+zoo::autoplot.zoo(data, facets = NULL)
+```
+
+---
+
+```{r, visualizing-impact, fig.height=6, fig.width=10}
+pre  <- as.Date(c("2020-01-01", "2020-03-11"))  
+post <- as.Date(c("2020-03-12", "2020-04-09"))  
+
+impact <- CausalImpact(data, pre, post)
+plot(impact)
+```
+
+---
+
+```{r, summary-of-impact}
+summary(impact)
+```
+
+---
+
+## What about the sleep data and weather covariates?
+
+```{r echo=FALSE}
+sleep_data <- get_sleep_data_for_causal_impact(here::here(), 7)
+zoo::autoplot.zoo(sleep_data)
+```
+
+---
+
+```{r fig.height=5, fig.width=10, image-impact-two}
+pre  <- as.Date(c("2019-09-04", "2020-03-27"))
+post <- as.Date(c("2020-03-28", "2020-09-02"))
+
+sleep_impact_march_28 <- CausalImpact(sleep_data, pre, post)
+plot(sleep_impact_march_28)
+```
+
+---
+
+```{r, summary-of-impact-two}
+summary(sleep_impact_march_28)
+```
+
+
+---
+
+## Inconclusive? Some popular reasons...
+
+1. There was no impact.
+2. The true 'treatment' occurred at another time.
+3. An 'inappropriate' prior was chosen.
+4. Multiple, 'treatments' occurred in same time period.
+5. Reliance on too few covariates (spurious correlation overtook model)
+6. Covariant time-series are not correlated with target `pre-period`
+
+.bottom[
+  __In the case of the sleep quality data, all four are potentially true.__
+]
+
+---
+
+```{r, fig.height=5, fig.width=10, image-impact-three}
+pre  <- as.Date(c("2019-09-04", "2020-03-15"))
+post <- as.Date(c("2020-03-16", "2020-09-02"))
+
+sleep_impact_march_16 <- CausalImpact(sleep_data, pre, post)
+plot(sleep_impact_march_16)
+```
+Let's pick another period...WFH started March 16
+
+---
+
+### What is the impact now?
+
+```{r, summary-of-impact-three}
+summary(sleep_impact_march_16)
+```
+
+---
+
+## TLDR;
+
+This technique sensitive to the selected period, priors, and covariates.
+
+---
+
+class: left-align
+
+## Under the hood
+
+
+A state space model, defined by an observation equation (1), linking observed data $$y_{t}$$ to a latent state $$\alpha_{t}$$ over time. And a state equation (2), dictating the change in state $$\alpha_{t}$$ over time.
+
+$$y_{t} = Z_{t}^{T} \alpha_{t} + \epsilon_{t}$$
+
+$$\alpha_{t+1} = T_{t}\alpha_{t} + R_{t}\eta_{t}$$
+
+---
+
+## Additional Resources
+
+- [CausalImpact Documentation](https://google.github.io/CausalImpact/CausalImpact.html>)
+- [YouTube: Inferring the effect of an event using CausalImpact](https://www.youtube.com/watch?v=GTgZfCltMm8) 
+- [Paper] Brodersen KH, Gallusser F, Koehler J, Remy N, Scott SL. Inferring causal impact using Bayesian structural time-series models. Annals of Applied Statistics, 2015, Vol. 9, No. 1, 247-274.
+  - <http://research.google.com/pubs/pub41854.html>
+
