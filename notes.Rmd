@@ -1,5 +1,5 @@
 ---
-title: "notes-causal-impact"
+title: "Notes: CausalImpact"
 output: github_document
 ---
 
