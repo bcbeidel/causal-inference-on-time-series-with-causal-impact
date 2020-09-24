@@ -2,7 +2,7 @@
 title: "Causal Inference on Time Series Data"
 subtitle: "with CausalImpact"
 author: "Brandon Beidel"
-date: "2020/09/28"
+date: "2020/09/24"
 output:
   xaringan::moon_reader:
     self_contained: true
