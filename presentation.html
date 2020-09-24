@@ -147,7 +147,7 @@ class: center, middle, inverse, title-slide
 # Causal Inference on Time Series Data
 ## with CausalImpact
 ### Brandon Beidel
-### 2020/09/28
+### 2020/09/24
 
 ---
 
@@ -232,7 +232,7 @@ Assumptions
 library(zoo); set.seed(1);
 
 x1 &lt;- 100 + arima.sim(model = list(ar = 0.999), n = 100)
-y  &lt;- 1.2 * (x1) + rnorm(100)     
+y  &lt;- 1.2 * (x1) + rnorm(100)
 y[71:100] &lt;- y[71:100] + 10
 start &lt;- as.Date(&quot;2020-01-01&quot;)
 time.points &lt;- seq.Date(start, by = 1, length.out = 100)
@@ -247,8 +247,8 @@ zoo::autoplot.zoo(data, facets = NULL)
 
 
 ```r
-pre.period  &lt;- as.Date(c(&quot;2020-01-01&quot;, &quot;2020-03-11&quot;))  
-post.period &lt;- as.Date(c(&quot;2020-03-12&quot;, &quot;2020-04-09&quot;))  
+pre.period  &lt;- as.Date(c(&quot;2020-01-01&quot;, &quot;2020-03-11&quot;))
+post.period &lt;- as.Date(c(&quot;2020-03-12&quot;, &quot;2020-04-09&quot;))
 
 impact &lt;- CausalImpact(data, pre.period, post.period)
 plot(impact)
@@ -265,21 +265,21 @@ summary(impact)
 
 ```
 ## Posterior inference {CausalImpact}
-## 
-##                          Average        Cumulative  
-## Actual                   117            3394        
+##
+##                          Average        Cumulative
+## Actual                   117            3394
 ## Prediction (s.d.)        107 (0.45)     3099 (13.00)
 ## 95% CI                   [106, 108]     [3074, 3125]
-##                                                     
-## Absolute effect (s.d.)   10 (0.45)      295 (13.00) 
+##
+## Absolute effect (s.d.)   10 (0.45)      295 (13.00)
 ## 95% CI                   [9.3, 11]      [268.7, 321]
-##                                                     
+##
 ## Relative effect (s.d.)   9.5% (0.42%)   9.5% (0.42%)
-## 95% CI                   [8.7%, 10%]    [8.7%, 10%] 
-## 
+## 95% CI                   [8.7%, 10%]    [8.7%, 10%]
+##
 ## Posterior tail-area probability p:   0.00101
 ## Posterior prob. of a causal effect:  99.89889%
-## 
+##
 ## For more details, type: summary(impact, &quot;report&quot;)
 ```
 
@@ -328,21 +328,21 @@ summary(s_impact)
 
 ```
 ## Posterior inference {CausalImpact}
-## 
-##                          Average         Cumulative     
-## Actual                   79              12544          
-## Prediction (s.d.)        78 (1.1)        12468 (171.7)  
-## 95% CI                   [76, 81]        [12119, 12804] 
-##                                                         
-## Absolute effect (s.d.)   0.48 (1.1)      76.60 (171.7)  
+##
+##                          Average         Cumulative
+## Actual                   79              12544
+## Prediction (s.d.)        78 (1.1)        12468 (171.7)
+## 95% CI                   [76, 81]        [12119, 12804]
+##
+## Absolute effect (s.d.)   0.48 (1.1)      76.60 (171.7)
 ## 95% CI                   [-1.6, 2.7]     [-260.0, 425.0]
-##                                                         
-## Relative effect (s.d.)   0.61% (1.4%)    0.61% (1.4%)   
-## 95% CI                   [-2.1%, 3.4%]   [-2.1%, 3.4%]  
-## 
+##
+## Relative effect (s.d.)   0.61% (1.4%)    0.61% (1.4%)
+## 95% CI                   [-2.1%, 3.4%]   [-2.1%, 3.4%]
+##
 ## Posterior tail-area probability p:   0.327
 ## Posterior prob. of a causal effect:  67%
-## 
+##
 ## For more details, type: summary(impact, &quot;report&quot;)
 ```
 
@@ -387,21 +387,21 @@ summary(s_impact)
 
 ```
 ## Posterior inference {CausalImpact}
-## 
-##                          Average           Cumulative      
-## Actual                   78                13411           
-## Prediction (s.d.)        81 (1)            13845 (179)     
-## 95% CI                   [79, 83]          [13493, 14203]  
-##                                                            
-## Absolute effect (s.d.)   -2.5 (1)          -434.4 (179)    
+##
+##                          Average           Cumulative
+## Actual                   78                13411
+## Prediction (s.d.)        81 (1)            13845 (179)
+## 95% CI                   [79, 83]          [13493, 14203]
+##
+## Absolute effect (s.d.)   -2.5 (1)          -434.4 (179)
 ## 95% CI                   [-4.6, -0.48]     [-791.7, -82.07]
-##                                                            
-## Relative effect (s.d.)   -3.1% (1.3%)      -3.1% (1.3%)    
-## 95% CI                   [-5.7%, -0.59%]   [-5.7%, -0.59%] 
-## 
+##
+## Relative effect (s.d.)   -3.1% (1.3%)      -3.1% (1.3%)
+## 95% CI                   [-5.7%, -0.59%]   [-5.7%, -0.59%]
+##
 ## Posterior tail-area probability p:   0.01025
 ## Posterior prob. of a causal effect:  98.975%
-## 
+##
 ## For more details, type: summary(impact, &quot;report&quot;)
 ```
 
