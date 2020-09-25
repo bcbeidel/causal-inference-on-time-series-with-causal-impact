@@ -100,20 +100,21 @@ class: inverse
 
 `CausalImpact` is an R package for causal inference using Bayesian structural time-series models.
 
-???
+---
 
-Try to predict the counterfactual, `Y(0)` given:
+## Why build this model?
 
-- response time series `Y(1)` (e.g., clicks)
-- set of control time series (e.g., clicks in unaffected markets or sites)
-- known period of intervention.
+Our goal is to estimate the `counterfactual` $Y(0)$ (i.e, a synthetic control).  That `counterfactual` represents a belief about observed data $Y(1)$ if the treatment had never occurred.
 
-Does so with a _Bayesian structural time-series model_ to predict what would have happened if the intervention had never occurred.
+### What are the inputs and assumptions?
 
-Assumptions
-
-- there is a set control time series that were themselves not affected by the intervention
-- that the relationship between covariates and treated time series, as established during the pre-period, remains stable throughout the post-period
+1. Observed Data $Y(1)$
+2. A `treatment` with a well defined start and end date.
+3. A series of `covariate` time-series that **are assumed to be**:
+    - Co-occuring during the same date range as $Y(1)$
+    - Correlated to $Y(1)$ in the defined `pre-period`
+    - Have an relationship with the observed $Y(1)$ established in the `pre-period` which remains stable through the `post-period`
+    - Are NOT themselves impacted by the `treatment`
 
 ---
 
